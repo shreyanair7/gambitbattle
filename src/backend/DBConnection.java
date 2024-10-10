@@ -2,6 +2,8 @@ package backend;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class DBConnection {
@@ -44,5 +46,37 @@ public class DBConnection {
     // Method to check if the connection is successful
     public boolean isConnected() {
         return connection != null;
+    }
+
+    // Method to register a new user (player or guest)
+    public void registerUser(String username, String playerType) {
+        String query = "INSERT INTO users (username, player_type) VALUES (?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, username);
+            pstmt.setString(2, playerType);
+            pstmt.executeUpdate();
+            System.out.println("User registered successfully: " + username);
+        } catch (SQLException e) {
+            System.err.println("Failed to register user.");
+            e.printStackTrace();
+        }
+    }
+
+    // Method to check if a user exists and get their type
+    public String getUserType(String username) {
+        String query = "SELECT player_type FROM users WHERE username = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, username);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("player_type");
+            } else {
+                System.out.println("User not found: " + username);
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to check user type.");
+            e.printStackTrace();
+        }
+        return null;
     }
 }

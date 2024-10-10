@@ -11,8 +11,9 @@ public class ChessBoard extends JFrame {
     private JPanel boardPanel;
     private Map<String, ImageIcon> pieceImages = new HashMap<>();
 
-    public ChessBoard() {
-        setTitle("Chess Board");
+    // Constructor now accepts player names
+    public ChessBoard(String player1Name, String player2Name) {
+        setTitle("GAMBIT Battle: " + player1Name + " vs " + player2Name); // Update title with player names
         setSize(800, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -26,6 +27,8 @@ public class ChessBoard extends JFrame {
         
         // Set up the chessboard squares and add pieces
         setupBoard();
+
+        setVisible(true); // Make the frame visible
     }
 
     private void loadPieceImages() {
@@ -103,12 +106,5 @@ public class ChessBoard extends JFrame {
         }
         // Row 1 or 6: Pawns
         return color + "_pawn";
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            ChessBoard chessBoard = new ChessBoard();
-            chessBoard.setVisible(true);
-        });
     }
 }

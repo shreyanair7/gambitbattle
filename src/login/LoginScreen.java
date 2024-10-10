@@ -1,107 +1,174 @@
 package login;
 
-import backend.UserAuth;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import gui.ChessBoard; // Import the ChessBoard class
+import backend.DBConnection; // Import your DBConnection class
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class LoginScreen extends JFrame {
-    private JTextField usernameField;
-    private JPasswordField passwordField;
-    private JButton loginButton;
-    private JLabel statusLabel;
-
-    // Initialize UserAuth instance to handle login
-    private UserAuth userAuth;
+    private JTextField player1Field;
+    private JTextField player2Field;
 
     public LoginScreen() {
-        userAuth = new UserAuth(); // Initialize UserAuth to connect to the database
-
-        // Set up JFrame properties
-        setTitle("GAMBIT BATTLE"); // Set the title of the frame
-        setSize(400, 300);
+        // Frame settings
+        setTitle("GAMBIT Battle Login");
+        setSize(700, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null); // Center the window
+        setLocationRelativeTo(null);
 
-        // Load icon image
-        ImageIcon icon = new ImageIcon("resources/symphony.png");
-        setIconImage(icon.getImage()); // Set icon image
+        // Background Image
+        JLabel background = new JLabel(new ImageIcon("resources/symphony.png"));
+        background.setLayout(new BorderLayout());
+        setContentPane(background);
 
-        // Set background color
-        getContentPane().setBackground(Color.BLACK);
+        // Title Label
+        JLabel titleLabel = new JLabel("Welcome to GAMBIT BATTLE!", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Georgia", Font.BOLD, 26));
+        titleLabel.setForeground(Color.BLACK);
 
-        // Create components with custom colors
-        JPanel panel = new JPanel(new GridLayout(2, 2, 10, 10));
-        panel.setBackground(Color.BLACK);
+        // Center Panel (for input fields and buttons)
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setOpaque(false);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 10, 5, 10);  // Reduced gaps to bring components closer
 
-        JLabel usernameLabel = new JLabel("Username:");
-        usernameLabel.setForeground(Color.MAGENTA);
+        // Position the title higher
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.NORTH;
+        centerPanel.add(titleLabel, gbc);
 
-        usernameField = new JTextField();
-        usernameField.setBackground(Color.BLACK);
-        usernameField.setForeground(Color.MAGENTA);
-        usernameField.setCaretColor(Color.MAGENTA);
+        // Player 1 Name Input
+        JLabel player1Label = new JLabel("Player 1 Name:");
+        player1Label.setForeground(Color.BLACK);
+        player1Field = new JTextField(12);
+        player1Field.setPreferredSize(new Dimension(200, 30)); // Thinner input box height
 
-        JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setForeground(Color.MAGENTA);
+        // Player 2 Name Input
+        JLabel player2Label = new JLabel("Player 2 Name:");
+        player2Label.setForeground(Color.BLACK);
+        player2Field = new JTextField(12);
+        player2Field.setPreferredSize(new Dimension(200, 30)); // Thinner input box height
 
-        passwordField = new JPasswordField();
-        passwordField.setBackground(Color.BLACK);
-        passwordField.setForeground(Color.MAGENTA);
-        passwordField.setCaretColor(Color.MAGENTA);
+        // Add player labels and fields to the center panel
+        gbc.gridwidth = 1; // Resetting gridwidth for each individual component
 
-        loginButton = new JButton("Login");
-        loginButton.setBackground(Color.BLACK);
-        loginButton.setForeground(Color.MAGENTA);
+        // Player 1 Label (centered horizontally)
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.EAST; // Aligns label to the right
+        centerPanel.add(player1Label, gbc);
+
+        // Player 1 Field (centered horizontally)
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST; // Aligns field to the left of label
+        centerPanel.add(player1Field, gbc);
+
+        // Player 2 Label (centered horizontally)
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.anchor = GridBagConstraints.EAST; // Aligns label to the right
+        centerPanel.add(player2Label, gbc);
+
+        // Player 2 Field (centered horizontally)
+        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.WEST; // Aligns field to the left of label
+        centerPanel.add(player2Field, gbc);
+
+        // Guest Login Button
+        JButton guestLoginButton = new JButton("Guest Login");
+        guestLoginButton.setFocusPainted(false);
+        guestLoginButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                // Default guest names
+                player1Field.setText("Guest 1");
+                player2Field.setText("Guest 2");
+            }
+        });
+
+        // Start Game Button
+        JButton loginButton = new JButton("Start Game");
         loginButton.setFocusPainted(false);
+        loginButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String player1Name = player1Field.getText();
+                String player2Name = player2Field.getText();
+                // Validate input and proceed to game
+                if (player1Name.isEmpty() || player2Name.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "Please enter names for both players or use guest login.");
+                } else {
+                    // Insert player names into the database
+                    insertPlayersIntoDatabase(player1Name, player2Name);
 
-        // Custom status label
-        statusLabel = new JLabel("", SwingConstants.CENTER);
-        statusLabel.setForeground(Color.MAGENTA);
+                    // Start the game with player names
+                    System.out.println("Starting game: " + player1Name + " vs " + player2Name);
+                    dispose(); // Close the login screen
+                    new ChessBoard(player1Name, player2Name); // Create and show the chessboard
+                }
+            }
+        });
 
-        // Add components to panel
-        panel.add(usernameLabel);
-        panel.add(usernameField);
-        panel.add(passwordLabel);
-        panel.add(passwordField);
+        // Add the buttons with reduced gaps and move them up
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
 
-        // Add padding around the panel
-        JPanel paddedPanel = new JPanel(new BorderLayout());
-        paddedPanel.setBackground(Color.BLACK);
-        paddedPanel.add(panel, BorderLayout.CENTER);
-        paddedPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 5));
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(guestLoginButton);
+        buttonPanel.add(loginButton);
+        centerPanel.add(buttonPanel, gbc);
 
-        // Add action listener for login button
-        loginButton.addActionListener(new LoginButtonListener());
+        // Spacer to push elements higher
+        gbc.gridy = 4;
+        gbc.weighty = 1.0;
+        centerPanel.add(Box.createVerticalGlue(), gbc);
 
-        // Set up layout
-        setLayout(new BorderLayout());
-        add(statusLabel, BorderLayout.NORTH);
-        add(paddedPanel, BorderLayout.CENTER);
-        add(loginButton, BorderLayout.SOUTH);
+        // Add title, input, and button panels to the layout
+        background.add(centerPanel, BorderLayout.CENTER);
+
+        setVisible(true);
     }
 
-    // ActionListener class for handling login button click
-    private class LoginButtonListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            String username = usernameField.getText();
-            String password = new String(passwordField.getPassword());
-
-            // Validate credentials
-            if (userAuth.loginUser(username, password)) {
-                statusLabel.setText("Login successful!");
-            } else {
-                statusLabel.setText("Invalid username or password.");
-            }
+    // Method to insert players into the database
+    private void insertPlayersIntoDatabase(String player1, String player2) {
+        DBConnection dbConnection = new DBConnection();
+        Connection connection = dbConnection.connect();
+    
+        // Use separate INSERT statements for each player
+        String insertQuery1 = "INSERT INTO users (username, player_type) VALUES (?, ?)";
+        String insertQuery2 = "INSERT INTO users (username, player_type) VALUES (?, ?)";
+    
+        try {
+            // Prepare the first insert statement
+            PreparedStatement preparedStatement1 = connection.prepareStatement(insertQuery1);
+            preparedStatement1.setString(1, player1);
+            preparedStatement1.setString(2, "Player");
+            preparedStatement1.executeUpdate();
+    
+            // Prepare the second insert statement
+            PreparedStatement preparedStatement2 = connection.prepareStatement(insertQuery2);
+            preparedStatement2.setString(1, player2);
+            preparedStatement2.setString(2, "Guest");
+            preparedStatement2.executeUpdate();
+    
+            System.out.println("Players inserted successfully.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        } finally {
+            dbConnection.close();
         }
     }
+    
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            LoginScreen loginScreen = new LoginScreen();
-            loginScreen.setVisible(true);
-        });
+        new LoginScreen();
     }
 }
